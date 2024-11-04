@@ -1,5 +1,5 @@
 import AbstractDataService from '@dankolz/abstract-data-service'
-import replaceRegexp from "../server-lib/utils/replace-regexp.mjs";
+import replaceRegexp from "./utils/replace-regexp.mjs";
 
 export default class RemoteDataService extends AbstractDataService {
 	constructor(options) {
@@ -29,7 +29,6 @@ export default class RemoteDataService extends AbstractDataService {
 			, cache: 'no-store'
 			, mode: 'cors'
 		})
-		// response = response.clone()
 		let result = await response.json()
 		return result[0]
 	}
@@ -53,7 +52,6 @@ export default class RemoteDataService extends AbstractDataService {
 			, cache: 'no-store'
 			, mode: 'cors'
 		})
-		// response = response.clone()
 		let result = await response.json()
 		return result
 	}
@@ -77,7 +75,6 @@ export default class RemoteDataService extends AbstractDataService {
 			, cache: 'no-store'
 			, mode: 'cors'
 		})
-		// response = response.clone()
 		let result = await response.json()
 		return result
 	}

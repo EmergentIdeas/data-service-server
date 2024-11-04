@@ -4,12 +4,14 @@ import defaultFilter from "./output-filter.mjs";
 import defaultTransformer from './output-transformer.mjs'
 import defaultMapper from './id-mapper.mjs'
 import defaultPreprocessor from './query-preprocessor.mjs'
+import configResponseHeaders from './config-response-headers.mjs'
+import saveAuthorizationProivder from './save-authorization-provider.mjs'
+import saveRecordsPreprocessor from './save-records-preprocessor.mjs';
+
 import filog from 'filter-log'
 
 export default class ServerDataService {
 	constructor(options) {
-
-
 		this.dataService = options.dataService
 		this.queryPreprocessor = options.queryPreprocessor || defaultPreprocessor
 		this.queryAuthorizationProvider = options.queryAuthorizationProvider || defaultAuthorizationProvider
@@ -17,12 +19,11 @@ export default class ServerDataService {
 		this.outputFilter = options.outputFilter || defaultFilter
 		this.outputTransformer = options.outputTransformer || defaultTransformer
 		this.idMapper = options.idMapper || defaultMapper
-		this.configResponseHeaders = (req, res) => {
-			res.set('Access-Control-Allow-Origin', '*')
-		}
+		this.configResponseHeaders = options.configResponseHeaders || configResponseHeaders 
+		this.saveAuthorizationProvider = options.saveAuthorizationProivder || saveAuthorizationProivder
+		this.saveRecordsPreprocessor = options.saveRecordsPreprocessor || saveRecordsPreprocessor
 
 		this.log = filog('server data service: ')
-
 	}
 
 	async fetchPOST(req, res, next) {
@@ -36,7 +37,7 @@ export default class ServerDataService {
 			if(typeof query === 'string') {
 				query = this.dataService.createIdQuery(query)
 			}
-			query = this.queryPreprocessor(query, req)
+			query = this.queryPreprocessor(query, req, 'fetch')
 			let authorized = await this.queryAuthorizationProvider(query, req)
 			if (!authorized) {
 				this.log.info('query denied')
@@ -63,7 +64,6 @@ export default class ServerDataService {
 			res.end()
 		}
 		catch (e) {
-			console.log(e)
 			this.log.error({
 				error: e
 				, msg: 'could not query ' + e.message
@@ -80,14 +80,13 @@ export default class ServerDataService {
 	async removePOST(req, res, next) {
 		try {
 			let orgQuery = req.body.query
-			let query = this.queryPreprocessor(orgQuery, req)
+			let query = this.queryPreprocessor(orgQuery, req, 'remove')
 			let authorized = await this.queryAuthorizationProvider(query, req)
 			if (!authorized) {
 				this.log.info('query denied')
 				return this.errorHandler(403, null, req, res, next)
 			}
 
-			// let response = await this.dataService._removeByQuery(this.dataService.collections.default, query)
 			let response = await this.dataService.remove(query)
 
 			this.configResponseHeaders(req, res)
@@ -95,7 +94,6 @@ export default class ServerDataService {
 			res.end()
 		}
 		catch (e) {
-			console.log(e)
 			this.log.error({
 				error: e
 				, msg: 'could not remove ' + e.message
@@ -113,22 +111,24 @@ export default class ServerDataService {
 	async savePOST(req, res, next) {
 		try {
 			let records = req.body.records
-			// let query = this.queryPreprocessor(orgQuery, req)
-			let authorized = await this.queryAuthorizationProvider(null, req)
+			// console.log(records)
+			let authorized = await this.saveAuthorizationProvider(records, req)
 			if (!authorized) {
 				this.log.info('query denied')
 				return this.errorHandler(403, null, req, res, next)
 			}
+			
+			records = await this.saveRecordsPreprocessor(records, req)
 
 			let promises = this.dataService.saveMany(records)
 
 			let result = await Promise.all(promises)
+
 			this.configResponseHeaders(req, res)
 			res.json(result)
 			res.end()
 		}
 		catch (e) {
-			console.log(e)
 			this.log.error({
 				error: e
 				, msg: 'could not save ' + e.message

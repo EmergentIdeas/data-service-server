@@ -122,70 +122,77 @@ function setup() {
 			})
 			return p
 		})
-		it("ops with sift", async function () {
-			let p = new Promise(async (resolve, reject) => {
-				try {
-					let events = new EventEmitter()
-					let serv = new RemoteDataService({
-						notification: events
-						, urlPrefix: urlPrefix + '7'
-					})
-
-					events.on('object-change', (one, two) => {
-						// console.log(`object change: ${JSON.stringify(one)} ${two}`)
-					})
-
-					let dat = {
-						msg: 'hello'
-					}
-
-					serv = new RemoteDataService({
-						notification: events
-						, urlPrefix: urlPrefix + '7'
-					})
-
-					await serv.remove({})
-
-					let [r] = await serv.save(Object.assign({}, dat))
-					assert.isNotNull(r._id)
-					// Make sure we have an independent id
-					assert.isNotNull(r.id)
-					let id = r._id
-					let id2 = r.id
-
-					let result = await serv.fetch()
-					assert.equal(result.length, 1)
-
-					result = await serv.fetchOne(id)
-					assert.equal(result.msg, 'hello')
-
-					result = await serv.fetchOne(id.toString())
-					assert.equal(result.msg, 'hello')
-
-
-					result = await serv.fetchOne({ msg: 'hello' })
-					assert.equal(result.msg, 'hello')
-
-					result = await serv.fetchOne({ msg: 'hello!' })
-					assert.isNull(result)
-
-					result = await serv.fetchOne({ msg: /hel/ })
-					assert.equal(result.msg, 'hello')
-
-					result = await serv.fetchOne({ msg: { "$regex": "hel"} })
-					assert.equal(result.msg, 'hello')
-
-
-
-				}
-				catch (e) {
-					console.log(e)
-					return reject('error')
-				}
-				resolve()
-			})
-			return p
+		it("ops with sift in memory", async function () {
+			return siftTests(urlPrefix + 7)
+		})
+		it("ops with mongo", async function () {
+			return siftTests(urlPrefix + 8)
 		})
 	})
 }
 setup()
+
+
+function siftTests(url) {
+	let p = new Promise(async (resolve, reject) => {
+		try {
+			let events = new EventEmitter()
+			events.on('object-change', (one, two) => {
+				// console.log(`object change: ${JSON.stringify(one)} ${two}`)
+			})
+
+			let dat = {
+				msg: 'hello'
+			}
+
+			let serv = new RemoteDataService({
+				notification: events
+				, urlPrefix: url
+			})
+
+			await serv.remove({})
+
+			let [r] = await serv.save(Object.assign({}, dat))
+			assert.isNotNull(r._id)
+			// Make sure we have an independent id
+			assert.isNotNull(r.id)
+			let id = r._id
+			let id2 = r.id
+
+			let result = await serv.fetch()
+			assert.equal(result.length, 1)
+
+			result = await serv.fetchOne(id)
+			assert.equal(result.msg, 'hello')
+
+			result = await serv.fetchOne(id.toString())
+			assert.equal(result.msg, 'hello')
+
+
+			result = await serv.fetchOne({ msg: 'hello' })
+			assert.equal(result.msg, 'hello')
+
+			result = await serv.fetchOne({ msg: 'hello!' })
+			assert.isNull(result)
+
+			result = await serv.fetchOne({ msg: /hel/ })
+			assert.equal(result.msg, 'hello')
+
+			result = await serv.fetchOne({ msg: { "$regex": "hel"} })
+			assert.equal(result.msg, 'hello')
+
+
+
+		}
+		catch (e) {
+			console.log(e)
+			return reject('error')
+		}
+		resolve()
+	})
+	return p
+	
+	
+	
+	
+}

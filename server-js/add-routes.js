@@ -10,8 +10,12 @@ import InMemoryDataService from '@dankolz/in-memory-data-service'
 import InMemoryDataServiceSift from '@dankolz/in-memory-data-service/lib/in-memory-data-service-sift.mjs'
 import ServerDataService from '../server-lib/server-data-service.mjs'
 import authorizationProvider from "../server-lib/authorization-provider.mjs"
+import MongoDBService from '@dankolz/mongodb-data-service'
+import Mongo from 'mongodb'
+const {MongoClient} = Mongo
 
 let log
+
 
 export default function (app) {
 	log = filog('unknown')
@@ -140,9 +144,35 @@ export default function (app) {
 	serviceRouter = express.Router()
 	server.addToRouter(serviceRouter)
 	app.use('/data7', serviceRouter)
+	
+	
+	
+	let uri = "mongodb://localhost:27017"
+	const client = new MongoClient(uri)
+
+
+	async function setupMongo() {
+		let col
+		let serv
+
+		await client.connect()
+		col = client.db('test').collection('test')
+		await col.remove({})
+
+		server = new ServerDataService({
+			dataService: new MongoDBService({
+				collections: {
+					default: col
+				}
+			})
+		})
+		serviceRouter = express.Router()
+		server.addToRouter(serviceRouter)
+		app.use('/data8', serviceRouter)
+
+	}
+	setupMongo()
 }
-
-
 
 
 

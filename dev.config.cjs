@@ -8,7 +8,7 @@ module.exports = {
 	apps: [{
 		name: appName + '-web',
 		script: './web-server.js',
-		// node_args: ['--inspect'],
+		node_args: ['--inspect'],
 		"env": {
 			PORT: 3000,
 			NODE_ENV: 'development',

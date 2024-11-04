@@ -1,7 +1,7 @@
 
 import mocha from "mocha";
 import { assert } from 'chai'
-import replaceRegexp from "../server-lib/utils/replace-regexp.mjs";
+import replaceRegexp from "../client-lib/utils/replace-regexp.mjs";
 
 describe("test regexp replacement", function () {
 	
