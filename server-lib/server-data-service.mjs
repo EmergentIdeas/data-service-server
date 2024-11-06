@@ -7,21 +7,41 @@ import defaultPreprocessor from './query-preprocessor.mjs'
 import configResponseHeaders from './config-response-headers.mjs'
 import saveAuthorizationProivder from './save-authorization-provider.mjs'
 import saveRecordsPreprocessor from './save-records-preprocessor.mjs';
+import cors from './cors-preprocessor.mjs';
+import removeAuthorizationProvider from './remove-authorization-provider.mjs'
 
 import filog from 'filter-log'
 
 export default class ServerDataService {
 	constructor(options) {
 		this.dataService = options.dataService
+
+		// Modify the query before it is run to add constraints
 		this.queryPreprocessor = options.queryPreprocessor || defaultPreprocessor
+
+		// Authorize the user to query records
 		this.queryAuthorizationProvider = options.queryAuthorizationProvider || defaultAuthorizationProvider
-		this.errorHandler = options.errorHandler || defaultErrorHandler
-		this.outputFilter = options.outputFilter || defaultFilter
-		this.outputTransformer = options.outputTransformer || defaultTransformer
-		this.idMapper = options.idMapper || defaultMapper
-		this.configResponseHeaders = options.configResponseHeaders || configResponseHeaders 
+		// Authorize the user to save records
 		this.saveAuthorizationProvider = options.saveAuthorizationProivder || saveAuthorizationProivder
+		this.removeAuthorizationProvider = options.removeAuthorizationProvider || removeAuthorizationProvider
+
+		// Respond to the caller if there's an error
+		this.errorHandler = options.errorHandler || defaultErrorHandler
+		// Determine the ID of a record
+		this.idMapper = options.idMapper || defaultMapper
+
+		// Preprocess records that will be saved to validate or augment them
 		this.saveRecordsPreprocessor = options.saveRecordsPreprocessor || saveRecordsPreprocessor
+
+		// Remove records from the query
+		this.outputFilter = options.outputFilter || defaultFilter
+		// Transform or augment query results
+		this.outputTransformer = options.outputTransformer || defaultTransformer
+
+		// Handle CORS preflight requests
+		this.corsPreprocessor = options.corsPreprocessor || cors
+		// Add additional headers for CORS or other needs
+		this.configResponseHeaders = options.configResponseHeaders || configResponseHeaders 
 
 		this.log = filog('server data service: ')
 	}
@@ -81,7 +101,7 @@ export default class ServerDataService {
 		try {
 			let orgQuery = req.body.query
 			let query = this.queryPreprocessor(orgQuery, req, 'remove')
-			let authorized = await this.queryAuthorizationProvider(query, req)
+			let authorized = await this.removeAuthorizationProvider(query, req)
 			if (!authorized) {
 				this.log.info('query denied')
 				return this.errorHandler(403, null, req, res, next)
@@ -111,7 +131,6 @@ export default class ServerDataService {
 	async savePOST(req, res, next) {
 		try {
 			let records = req.body.records
-			// console.log(records)
 			let authorized = await this.saveAuthorizationProvider(records, req)
 			if (!authorized) {
 				this.log.info('query denied')
@@ -148,6 +167,7 @@ export default class ServerDataService {
 	 * @returns 
 	 */
 	addToRouter(router) {
+		router.use(this.corsPreprocessor)
 		router.post('/fetch', this.fetchPOST.bind(this))
 		router.delete('/', this.removePOST.bind(this))
 		router.post('/', this.savePOST.bind(this))

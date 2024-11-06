@@ -5,12 +5,31 @@ export default class RemoteDataService extends AbstractDataService {
 	constructor(options) {
 		super(options)
 		this.urlPrefix = options.urlPrefix
-		this.collections = {
-			default: {
-				collectionName: 'default'
+		if(!options.collections) {
+			this.collections = {
+				default: {
+					collectionName: 'default'
+				}
 			}
 		}
+		this.closeConnection = options.closeConnection || false
+		this.cacheValue = options.cacheValue 
 	}
+	
+	/**
+	 * Adds headers to the request for caching and connection
+	 * @param {Request} request 
+	 */
+	addExtraHeaders(request) {
+		if(this.closeConnection) {
+			request.headers['Connection'] = 'close'
+		}
+		if(this.cacheValue) {
+			request.headers['cache'] = this.cacheValue
+		}
+
+	}
+
 	/**
 	 * The internal implementation of saving objects, either insert or update. 
 	 * @param {object} collection Could be anyting. An array, a mongo collection, even just a string to 
@@ -19,16 +38,17 @@ export default class RemoteDataService extends AbstractDataService {
 	 * @returns a promise which resolves to the result of the save, an array of the [result, change-type(update,create), native-result].
 	 */
 	async _doInternalSave(collection, focus) {
-		let response = await fetch(this.urlPrefix, {
+		let request = {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
-				, "Connection": "close"
 			},
 			body: JSON.stringify({ records: [focus]})
-			, cache: 'no-store'
 			, mode: 'cors'
-		})
+		}
+		this.addExtraHeaders(request)
+
+		let response = await fetch(this.urlPrefix, request)
 		let result = await response.json()
 		return result[0]
 	}
@@ -42,16 +62,17 @@ export default class RemoteDataService extends AbstractDataService {
 	 */
 	async _doInternalRemove(collection, query) {
 		query = replaceRegexp(query)
-		let response = await fetch(this.urlPrefix, {
+		let request = {
 			method: "DELETE",
 			headers: {
 				"Content-Type": "application/json"
-				, "Connection": "close"
 			},
 			body: JSON.stringify({ query: query })
-			, cache: 'no-store'
 			, mode: 'cors'
-		})
+		}
+		this.addExtraHeaders(request)
+
+		let response = await fetch(this.urlPrefix, request)
 		let result = await response.json()
 		return result
 	}
@@ -65,16 +86,17 @@ export default class RemoteDataService extends AbstractDataService {
 	 */
 	async _doInternalFetch(collection, query) {
 		query = replaceRegexp(query)
-		let response = await fetch(this.urlPrefix + '/fetch', {
+		let request = {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
-				, "Connection": "close"
 			},
 			body: JSON.stringify({ query: query })
-			, cache: 'no-store'
 			, mode: 'cors'
-		})
+		}
+		this.addExtraHeaders(request)
+
+		let response = await fetch(this.urlPrefix + '/fetch', request)
 		let result = await response.json()
 		return result
 	}

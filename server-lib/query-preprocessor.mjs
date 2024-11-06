@@ -1,5 +1,5 @@
 
-function queryPreprocessor(query, req) {
+function queryPreprocessor(query, req, type /* 'remove' or 'fetch' */) {
 	return query
 }
 

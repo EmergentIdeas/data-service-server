@@ -1,0 +1,8 @@
+__::start__
+<script src="/js/tests.js" defer></script>
+<div class="page page-landing">
+	<div id="mocha">
+		
+	</div>
+</div>
+__::end__

@@ -25,7 +25,8 @@
 	},
 	"devDependencies": {
 		"@dankolz/in-memory-data-service": "^1.0.2",
-		"@dankolz/mongodb-data-service": "^1.0.8",
+		"@dankolz/indexeddb-data-service": "^1.0.1",
+		"@dankolz/mongodb-data-service": "^1.0.9",
 		"browserify": "^14.4.0",
 		"chai": "^4.3.4",
 		"exorcist": "^2.0.0",
