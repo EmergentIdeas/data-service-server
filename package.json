@@ -1,7 +1,8 @@
 {
 	"name": "@dankolz/data-service-server",
 	"version": "1.0.0",
-	"main": "client-lib/index.js",
+	"main": "server-lib/server-data-service.mjs",
+	"browser": "client-lib/remote-data-service.mjs",
 	"scripts": {
 		"test": "node_modules/mocha/bin/mocha",
 		"less-build": "npx lessc --source-map --source-map-include-source less/pages.less public/css/pages.css",
@@ -54,8 +55,8 @@
 	},
 	"files": [
 		"/client-lib",
-		"/less/components.less",
-		"/public/js/index*"
+		"/server-lib",
+		"README.md"
 	],
 	"type": "module"
 }

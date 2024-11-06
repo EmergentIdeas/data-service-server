@@ -1,18 +1,38 @@
-import defaultAuthorizationProvider from './authorization-provider.mjs'
-import defaultErrorHandler from './default-error-handler.mjs'
-import defaultFilter from "./output-filter.mjs";
-import defaultTransformer from './output-transformer.mjs'
-import defaultMapper from './id-mapper.mjs'
-import defaultPreprocessor from './query-preprocessor.mjs'
-import configResponseHeaders from './config-response-headers.mjs'
-import saveAuthorizationProivder from './save-authorization-provider.mjs'
-import saveRecordsPreprocessor from './save-records-preprocessor.mjs';
-import cors from './cors-preprocessor.mjs';
-import removeAuthorizationProvider from './remove-authorization-provider.mjs'
+import defaultAuthorizationProvider from './parts/authorization-provider.mjs'
+import defaultErrorHandler from './parts/default-error-handler.mjs'
+import defaultFilter from "./parts/output-filter.mjs";
+import defaultTransformer from './parts/output-transformer.mjs'
+import defaultMapper from './parts/id-mapper.mjs'
+import defaultPreprocessor from './parts/query-preprocessor.mjs'
+import configResponseHeaders from './parts/config-response-headers.mjs'
+import saveAuthorizationProivder from './parts/save-authorization-provider.mjs'
+import saveRecordsPreprocessor from './parts/save-records-preprocessor.mjs';
+import cors from './parts/cors-preprocessor.mjs';
+import removeAuthorizationProvider from './parts/remove-authorization-provider.mjs'
 
 import filog from 'filter-log'
 
+/**
+ * Accepts http requests to interact with an AbstractDataService
+ */
 export default class ServerDataService {
+	
+	/**
+	 * 
+	 * @param {Object} options 
+	 * @param {AbstractDataService} options.dataService The underlying data service
+	 * @param {function} options.queryPreprocessor Modify the query before it is run to add constraints
+	 * @param {function} options.queryAuthorizationProvider Authorize the user to query records
+	 * @param {function} options.saveAuthorizationProvider Authorize the user to save records
+	 * @param {function} options.removeAuthorizationProvider Authorize the user to remove records
+	 * @param {function} options.errorHandler Respond to the caller if there's an error
+	 * @param {function} options.idMapper Determine the ID of a record
+	 * @param {function} options.saveRecordsPreprocessor Preprocess records that will be saved to validate or augment them
+	 * @param {function} options.outputFilter Remove records from the query
+	 * @param {function} options.outputTransformer Transform or augment query results
+	 * @param {function} options.corsPreprocessor Handle CORS preflight requests
+	 * @param {function} options.configResponseHeaders Add additional headers for CORS or other needs
+	 */
 	constructor(options) {
 		this.dataService = options.dataService
 
@@ -22,7 +42,8 @@ export default class ServerDataService {
 		// Authorize the user to query records
 		this.queryAuthorizationProvider = options.queryAuthorizationProvider || defaultAuthorizationProvider
 		// Authorize the user to save records
-		this.saveAuthorizationProvider = options.saveAuthorizationProivder || saveAuthorizationProivder
+		this.saveAuthorizationProvider = options.saveAuthorizationProvider || saveAuthorizationProivder
+		// Authorize the user to remove records
 		this.removeAuthorizationProvider = options.removeAuthorizationProvider || removeAuthorizationProvider
 
 		// Respond to the caller if there's an error
@@ -103,7 +124,7 @@ export default class ServerDataService {
 			let query = this.queryPreprocessor(orgQuery, req, 'remove')
 			let authorized = await this.removeAuthorizationProvider(query, req)
 			if (!authorized) {
-				this.log.info('query denied')
+				this.log.info('remove denied')
 				return this.errorHandler(403, null, req, res, next)
 			}
 
@@ -133,7 +154,7 @@ export default class ServerDataService {
 			let records = req.body.records
 			let authorized = await this.saveAuthorizationProvider(records, req)
 			if (!authorized) {
-				this.log.info('query denied')
+				this.log.info('save denied')
 				return this.errorHandler(403, null, req, res, next)
 			}
 			

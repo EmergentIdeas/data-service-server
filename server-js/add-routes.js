@@ -9,7 +9,7 @@ import group1 from '../test-data/group-1.mjs'
 import InMemoryDataService from '@dankolz/in-memory-data-service'
 import InMemoryDataServiceSift from '@dankolz/in-memory-data-service/lib/in-memory-data-service-sift.mjs'
 import ServerDataService from '../server-lib/server-data-service.mjs'
-import authorizationProvider from "../server-lib/authorization-provider.mjs"
+import authorizationProvider from "../server-lib/parts/authorization-provider.mjs"
 import MongoDBService from '@dankolz/mongodb-data-service'
 import Mongo from 'mongodb'
 const {MongoClient} = Mongo
@@ -169,6 +169,60 @@ export default function (app) {
 		serviceRouter = express.Router()
 		server.addToRouter(serviceRouter)
 		app.use('/data8', serviceRouter)
+		
+		
+		server = new ServerDataService({
+			dataService: new MongoDBService({
+				collections: {
+					default: col
+				}
+			}),
+			// , corsPreprocessor: (req, res, next) => {
+			// 	if (req.method === 'OPTIONS') {
+			// 		res.end()
+			// 	}
+			// 	else {
+			// 		next()
+			// 	}
+			// }
+			// , queryPreprocessor: (query, req, type) => {
+			// 	console.log(query)
+			// 	return query
+			// }
+			queryAuthorizationProvider: (query, req) => {
+				let val = req.get('Authorization')
+				if(val === 'Bearer 123') {
+					return true
+				}
+				return false
+			}
+			, saveAuthorizationProvider: (records, req) => {
+				let val = req.get('Authorization')
+				if(val === 'Bearer 456') {
+					return true
+				}
+				return false
+			}
+			, removeAuthorizationProvider: (query, req) => {
+				let val = req.get('Authorization')
+				if(val === 'Bearer 789') {
+					return true
+				}
+				return false
+			}
+			, saveRecordsPreprocessor: async (records, req) => {
+				for(let rec of records) {
+					rec.lastChange = new Date()
+				}
+				return records
+			}
+		})
+		serviceRouter = express.Router()
+		server.addToRouter(serviceRouter)
+		app.use('/data9', serviceRouter)
+		
+		
+
 
 	}
 	setupMongo()

@@ -1,4 +1,4 @@
-import RemoteDataService from '../client-lib/RemoteDataService.mjs'
+import RemoteDataService from '../client-lib/remote-data-service.mjs'
 import mocha from 'mocha'
 import { expect, assert } from 'chai'
 import EventEmitter from 'events'

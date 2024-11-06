@@ -6,7 +6,7 @@ import sift from "sift"
 
 import EventEmitter from "events";
 import IndexeddbDataService from "@dankolz/indexeddb-data-service/indexeddb-data-service-sift.js"
-import RemoteDataService from '../client-lib/RemoteDataService.mjs'
+import RemoteDataService from '../client-lib/remote-data-service.mjs'
 let StoreClass = IndexeddbDataService
 
 async function genIndexedStore(events) {

@@ -1,5 +1,7 @@
 import AbstractDataService from '@dankolz/abstract-data-service'
 import replaceRegexp from "./utils/replace-regexp.mjs";
+import presendTransformer from './utils/presend-transformer.mjs';
+import postreceiveTransformer from './utils/postreceive-transformer.mjs';
 
 export default class RemoteDataService extends AbstractDataService {
 	constructor(options) {
@@ -14,6 +16,9 @@ export default class RemoteDataService extends AbstractDataService {
 		}
 		this.closeConnection = options.closeConnection || false
 		this.cacheValue = options.cacheValue 
+		this.authToken = options.authToken
+		this.presaveTransformer = options.presaveTransformer || presendTransformer
+		this.postfetchTransformer = options.postfetchTransformer || postreceiveTransformer
 	}
 	
 	/**
@@ -27,6 +32,10 @@ export default class RemoteDataService extends AbstractDataService {
 		if(this.cacheValue) {
 			request.headers['cache'] = this.cacheValue
 		}
+		
+		if(this.authToken) {
+			request.headers['Authorization'] = 'Bearer ' + this.authToken
+		}
 
 	}
 
@@ -38,12 +47,16 @@ export default class RemoteDataService extends AbstractDataService {
 	 * @returns a promise which resolves to the result of the save, an array of the [result, change-type(update,create), native-result].
 	 */
 	async _doInternalSave(collection, focus) {
+		
+		let records = [focus]
+		records = await this.presaveTransformer(records)
+		
 		let request = {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
 			},
-			body: JSON.stringify({ records: [focus]})
+			body: JSON.stringify({ records: records})
 			, mode: 'cors'
 		}
 		this.addExtraHeaders(request)
@@ -98,6 +111,10 @@ export default class RemoteDataService extends AbstractDataService {
 
 		let response = await fetch(this.urlPrefix + '/fetch', request)
 		let result = await response.json()
+		if(!Array.isArray(result)) {
+			result = [result]
+		}
+		result = await this.postfetchTransformer(result)
 		return result
 	}
 
